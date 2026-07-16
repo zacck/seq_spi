@@ -1,22 +1,17 @@
-## Template Project for TCL Flow with Vivado and Basys 3
-
-This decouples on from the Vivado GUI flow, and saves some time during build and flashing.
-
-Note:
-1. Your top level module will need to be labelled top_level, this can always be changed
-2. Built for the Artix-7 on the Basys3  can be changed 
-
-Structure
-
-### Directories
-- hdl: All HDL files go here 
-- obj: This is output for the builds 
-- sim: our simulation, C++ and Python files go here 
-- xdc: Constraints file(s) goes here 
+## Sequential Logic Plus SPI peripheral
 
 
-### Files 
-- build.tcl: TCL script to build a bitfile from our source 
-- program_flash.tcl: TCL script to program our bitfile to the device 
-- sim/test_counter.py :  A cocotb test script for a simple module this, really just shows setup
-- hdl/counter.sv : A simple counter module to exercise the test module
+Mostly some work to practise sequential logic, some Hardware thinking and 
+all builds up into an SPI peripheral that we could reuse down the line. 
+
+### Interesting Parts 
+
+The edge detector in the top level took 2 hours to figure out, one needs to 
+consider the states of the various signals and understand what the circuit 
+will do at what time. 
+
+
+### Realizations 
+Perhaps this would have been fixed way faster if I knew how to cosimulate with 
+COCOTB, mocking the other modules could have shown a waveform that would have
+made this quite simple to fix
