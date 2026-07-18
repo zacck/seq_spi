@@ -1,0 +1,106 @@
+import cocotb 
+import os 
+import random 
+import sys 
+from math import log 
+import logging 
+from pathlib import Path 
+from cocotb.clock import Clock 
+from cocotb.triggers import Timer, ClockCycles, RisingEdge, FallingEdge, ReadOnly, with_timeout
+from cocotb.utils import get_sim_time as gst
+from cocotb.runner import get_runner
+test_file = os.path.basename(__file__).replace(".py", "")
+
+#utility function to reverse bits 
+def reverse_bits(n,size):
+    reversed_n = 0 
+    for i in range(size):
+        reversed_n = (reversed_n << 1) | (n & 1)
+        n >>= 1 
+        return reversed_n
+
+
+#trest_spi_message
+SPI_RESP_MSG = 0x2345 
+#flip them:
+SPI_RESP_MSG = reverse_bits(SPI_RESP_MSG,16)
+
+## fake spi module to test design against
+async def test_spi_device(dut):
+    count = 0
+    count_max = 16
+    while True:
+        await FallingEdge(dut.cs) # listen for CS 
+        dut.cipo.value = (SPI_RESP_MSG>>count)&0x1 # feed in lowest bit 
+        dut._log.info(f"SPI peripheral Device Sending: {dut.cipo.value}")
+        count +=1
+        count %=16
+        while dut.cs.value.integer == 0:
+            await RisingEdge(dut.dclk)
+            bit = dut.copi.value.integer #grab message 
+            await FallingEdge(dut.dclk)
+            dut.cipo.value = (SPI_RESP_MSG>>count)&0x01 
+            dut._log.info(f"SPI peripheral Device Sending: {dut.cipo.value}")
+            count += 1
+            count %= 16
+
+
+@cocotb.test()
+async def test_a(dut):
+    """SPI Module Test"""
+    cocotb.start_soon(Clock(dut.clk, 10, units="ns").start())
+    cocotb.start_soon(test_spi_device(dut))
+    dut._log.info("Holding Reset ...")
+    dut.rst.value = 1 
+    dut.trigger.value = 0 
+    dut.data_in.value = 0xBEEF&0xFFFF
+    await ClockCycles(dut.clk, 3)
+    assert dut.cs.value.integer == 1, "We are in reset so CS should not be low"
+    await FallingEdge(dut.clk)
+    dut.rst.value = 0
+    await ClockCyles(dut.clk, 3)
+    await FallingEdge(dut.clk)
+    dut._log.info("Setting Trigger")
+    dut.trigger.value = 1
+    await ClockCycles(dut.clk, 1, rising=False)
+    dut.data_in.value = 0xAAAA
+    dut.trigger.value = 0 
+    await with_timeout(RisingEdge(dut.data_valid), 5000, 'ns')
+    await ReadOnly()
+    data_out = dut.data_out.value
+    dut._log.info(f"Receiver Data: {data_out}")
+    await ClockCycles(dut.clk, 300)
+
+
+def spi_con_runner():
+    """Simulate SPI controller using the Python Runner"""
+    hdl_toplevel_lang = os.getenv("HDL_TOPLEVEL_LANG", "verilog")
+    sim = os.getenv("SIM", "verilator")
+    proj_path = Path(__file__).resolve().parent.parent
+    sys.path.append(str(proj_path / "sim" / "model"))
+    sources = [proj_path / "hdl" / "spi_con.sv"]
+    build_test_args = ["-Wall"]
+    parameters = {'DATA_WIDTH': 16, 'DATA_CLK_PERIOD':10}
+    sys.path.append(str(proj_path / "sim"))
+    hdl_toplevel = "spi_con"
+    runner = get_runner(sim)
+    runner.build(
+            sources=sources, 
+            hdl_toplevel=hdl_toplevel, 
+            always=True, 
+            build_args=build_test_args, 
+            parameters=parameters, 
+            timescale= ('1ns','1ps'), 
+            waves=True
+    )
+    run_test_args = [] 
+    runner.test(
+            hdl_toplevel=hdl_toplevel, 
+            test_module=test_file, 
+            test_args=run_test_args, 
+            waves=True
+    )
+
+
+if __name__ == "__main__":
+    spi_con_runner()
