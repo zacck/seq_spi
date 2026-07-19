@@ -18,15 +18,37 @@ module spi_con
 		output logic cs // Chip Select
 	);
 
-	logic [31:0]internal_count;
+	logic [31:0]bit_counter;
+	logic [31:0]clk_period_count;
+
+	always_ff @(posedge clk) begin 
+		if(rst) begin 
+			data_out <= 0; 
+			data_valid <= 0; 
+			copi <= 0; 
+			dclk <= 0; 
+			cs <= 1;
+		end
+	end
 
 	always_ff @(posedge clk) begin
-		if(trigger) begin
-			internal_count  <= DATA_CLK_PERIOD - 1;
-		end else begin 
-			if(internal_count > 0)
-				internal_count <= internal_count - 1;
+		if(trigger) begin 
+			cs <= 0;
+			bit_counter <= DATA_WIDTH - 1;
+		end else begin
+			if(cs == 0) begin
+				if (clk_period_count == 0) begin
+					clk_period_count <= DATA_CLK_PERIOD -1;
+					dclk <= 0;
+				end else if(clk_period_count <= (DATA_CLK_PERIOD >> 1)) begin
+					clk_period_count <= clk_period_count - 1;
+					dclk <= 1;
+				end else begin
+					clk_period_count <= clk_period_count - 1;
+					dclk <= 0;
+				end
+			end
 		end 
-	end 
+	end
 endmodule
 
