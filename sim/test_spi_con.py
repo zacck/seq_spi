@@ -37,7 +37,8 @@ async def test_spi_device(dut):
         count %=16
         while dut.cs.value.integer == 0:
             await RisingEdge(dut.dclk)
-            bit = dut.copi.value.integer #grab message 
+            bit = dut.copi.value.integer #grab message
+            dut._log.info(f"SPI peripheral Device Receing: {bit}")
             await FallingEdge(dut.dclk)
             dut.cipo.value = (SPI_RESP_MSG>>count)&0x01 
             dut._log.info(f"SPI peripheral Device Sending: {dut.cipo.value}")
@@ -48,6 +49,7 @@ async def test_spi_device(dut):
 @cocotb.test()
 async def test_a(dut):
     """SPI Module Test"""
+    dut._log.info("Starting...")
     cocotb.start_soon(Clock(dut.clk, 10, units="ns").start())
     cocotb.start_soon(test_spi_device(dut))
     dut._log.info("Holding Reset ...")
@@ -58,7 +60,7 @@ async def test_a(dut):
     assert dut.cs.value.integer == 1, "We are in reset so CS should not be low"
     await FallingEdge(dut.clk)
     dut.rst.value = 0
-    await ClockCyles(dut.clk, 3)
+    await ClockCycles(dut.clk, 3)
     await FallingEdge(dut.clk)
     dut._log.info("Setting Trigger")
     dut.trigger.value = 1
