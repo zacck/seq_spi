@@ -34,7 +34,9 @@ module top_level(
 		.clk(clk_100mhz), 
 		.rst(sys_rst),
 		.in(btn[1]),
+		/* verilator lint_off PINCONNECTEMPTY */
 		.out(),
+		/* verilator lint_on PINCONNECTEMPTY */
 		.on_up(sig_btn_1)
 	);
 
