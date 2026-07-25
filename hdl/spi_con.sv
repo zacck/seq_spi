@@ -31,10 +31,8 @@ module spi_con
 			dclk <= 0; 
 			cs <= 1;
 		end
-	end
-
-	// run dclk at 50% duty
-	always_ff @(posedge clk) begin
+		
+		// run dclk at 50% duty
 		if(trigger) begin 
 			cs <= 0;
 			bit_counter <= DATA_WIDTH - 1;
@@ -51,32 +49,28 @@ module spi_con
 					clk_period_count <= clk_period_count - 1;
 					dclk <= 0;
 				end
-			end
-		end 
-	end
 
-	//set copi to MSB of copi buffer 
-	//shift copi_buffer by 1 to the left
-	// reduce bit counter 
-	// when done with bits 
-	// raise cs 
-	// when dclk goes high 
-	// read cipo to cipo_buffer
-	always_ff @(posedge clk) begin 
-		if(cs == 0) begin
-			if (bit_counter == 0) begin 
-				cs <= 1;
-				data_valid <= 1; 
-				data_out <= cipo_buffer;
-			end else if((dclk == 0) && (clk_period_count == DATA_CLK_PERIOD - 1)) begin 
-				copi <= copi_buffer[DATA_WIDTH-1];
-				copi_buffer <= {copi_buffer[DATA_WIDTH-2:0], 1'b0};
-				bit_counter <= bit_counter - 1;
-			end else if((dclk == 1) && (clk_period_count == ((DATA_CLK_PERIOD >> 1) - 1))) begin 
-				cipo_buffer <= {cipo_buffer[DATA_WIDTH-2:0], cipo};
-			end
-		end else 
-			data_valid <= 0;
+				//set copi to MSB of copi buffer 
+				//shift copi_buffer by 1 to the left
+				// reduce bit counter 
+				// when done with bits 
+				// raise cs 
+				// when dclk goes high 
+				// read cipo to cipo_buffer
+				if (bit_counter == 0) begin 
+					cs <= 1;
+					data_valid <= 1; 
+					data_out <= cipo_buffer;
+				end else if((dclk == 0) && (clk_period_count == DATA_CLK_PERIOD - 1)) begin 
+					copi <= copi_buffer[DATA_WIDTH-1];
+					copi_buffer <= {copi_buffer[DATA_WIDTH-2:0], 1'b0};
+					bit_counter <= bit_counter - 1;
+				end else if((dclk == 1) && (clk_period_count == ((DATA_CLK_PERIOD >> 1) - 1))) begin 
+					cipo_buffer <= {cipo_buffer[DATA_WIDTH-2:0], cipo};
+				end
+			end else 
+				data_valid <= 0;
+		end 
 	end
 endmodule
 
