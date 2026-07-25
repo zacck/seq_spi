@@ -7,7 +7,14 @@ module top_level(
 	output logic [15:0] led,
 	output logic [2:0] rgb,
 	output logic [3:0] an,
-	output logic [6:0] seg);
+	output logic [6:0] seg,
+
+	// SPI 
+	output logic copi, 
+	input wire cipo, 
+	output logic dclk, 
+	output logic cs
+	);
 
 	// control system reset with a button
 	logic sys_rst;
@@ -82,6 +89,7 @@ module top_level(
 
 	logic [7:0] red, green, blue; 
 
+
 	// concat colors into one reg for the seven segment
 	assign val_to_display = {red, 4'h0, blue, 4'h0, green};
 
@@ -96,7 +104,7 @@ module top_level(
 		.r_in(red), 
 		.g_in(green),
 		.b_in(blue), 
-		.rout(rgb[0]), 
+		.r_out(rgb[0]), 
 		.g_out(rgb[1]),
 		.b_out(rgb[2])
 		);
@@ -169,10 +177,10 @@ module top_level(
 				0: red  <= spi_read_data[10:3];
 				1: green <= spi_read_data[10:3];
 				2: blue  <= spi_read_data[10:3];
-				default: val_to_display <= 32'b0;
-			endcase
+				default: {red, blue, green} <= 24'h0;
+ 			endcase
 		end
-		if(select_count == d'1) begin
+		if(select_count == 'd1) begin
 			case(adc_count)
 				0: begin
 					spi_write_data <= 17'b11000_0000_0000_0000;
