@@ -36,3 +36,9 @@ Additionally I do like this separation of verification and synthesization code
 My SPI test seems to be a little broken I send a different value from the one I am observing it could 
 be the bitshifting in the test that is breaking the value, however the value I send it the one I see in data_in 
 so this works for now.
+
+
+I notice that I am reusing a lot of my modules from my previous projects, I wonder if I can build a library of modules
+such a way that I can have it included in the folder and since synth only builds the modules pulled into the top level 
+we can have them be used as needed?
+
